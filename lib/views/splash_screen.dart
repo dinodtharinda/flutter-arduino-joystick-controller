@@ -14,7 +14,8 @@ class SplashScreen extends StatelessWidget {
           builder: (c, snapshot) {
             final state = snapshot.data;
             if (state == BluetoothState.on) {
-              return const FindDevicesScreen();
+
+              return  const FindDevicesScreen();
             }
             return const Center(
               child: Text("Bluetooth off"),

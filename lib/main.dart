@@ -21,17 +21,3 @@ void main() {
 
 
 
-
-class RemoteScreen extends StatefulWidget {
-  const RemoteScreen({super.key});
-
-  @override
-  State<RemoteScreen> createState() => _RemoteScreenState();
-}
-
-class _RemoteScreenState extends State<RemoteScreen> {
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
-}

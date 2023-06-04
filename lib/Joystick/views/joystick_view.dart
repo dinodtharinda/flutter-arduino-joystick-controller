@@ -110,13 +110,18 @@ class JoystickView extends StatelessWidget {
           ],
         );
         return GestureDetector(
+          onPanCancel: ()async {
+           await Future.delayed(Duration(seconds: 1)).then((value) {
+              onDirectionChanged!(0, 0);
+            });
+            onDirectionChanged!(0, 0);
+          },
           onPanStart: (details) {
-          _callbackTimestamp = _processGesture(actualSize, actualSize / 2,
-              details.localPosition, _callbackTimestamp ?? DateTime.now());
-          setState(() => lastPosition = details.localPosition);
+            _callbackTimestamp = _processGesture(actualSize, actualSize / 2,
+                details.localPosition, _callbackTimestamp ?? DateTime.now());
+            setState(() => lastPosition = details.localPosition);
           },
           onPanEnd: (details) {
-          
             _callbackTimestamp = null;
             if (onDirectionChanged != null) {
               onDirectionChanged!(0, 0);
@@ -126,8 +131,8 @@ class JoystickView extends StatelessWidget {
                 innerCircleSize,
                 actualSize,
                 Offset(0, 0));
-            setState(() =>
-                lastPosition = Offset(innerCircleSize, innerCircleSize));
+            setState(
+                () => lastPosition = Offset(innerCircleSize, innerCircleSize));
           },
           onPanUpdate: (details) {
             _callbackTimestamp = _processGesture(actualSize, actualSize / 2,

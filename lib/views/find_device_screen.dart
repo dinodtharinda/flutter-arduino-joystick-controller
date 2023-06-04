@@ -20,35 +20,51 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
   FlutterBlue flutterBlue = FlutterBlue.instance;
   StreamSubscription<ScanResult>? scanSubScription;
 
-  late BluetoothDevice targetDevice;
-  late BluetoothCharacteristic targetCharacteristic;
+  BluetoothDevice? targetDevice;
+  BluetoothCharacteristic? targetCharacteristic;
 
   String connectionText = "";
 
+  bool isLoading = false;
+  @override
+  void dispose() {
+    flutterBlue.stopScan();
+    super.dispose();
+  }
   @override
   void initState() {
     super.initState();
     startScan();
   }
+  
 
   startScan() {
+    stopScan() ;
+    flutterBlue.stopScan();
     setState(() {
+      isLoading = true;
       connectionText = "Start Scanning";
     });
-
+  
+    // print(flutterBlue.connectedDevices);
+    
     scanSubScription = flutterBlue.scan().listen((scanResult) {
       if (scanResult.device.name == Constants.TARGET_DEVICE_NAME) {
         print('DEVICE found');
         stopScan();
         setState(() {
+          isLoading = false;
           connectionText = "Found Target Device";
         });
 
         targetDevice = scanResult.device;
         connectToDevice();
       }
-    }, onDone: () => stopScan());
+    },
+     onDone: () => stopScan());
   }
+
+
 
   stopScan() {
     scanSubScription?.cancel();
@@ -56,35 +72,38 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
   }
 
   connectToDevice() async {
+    await targetDevice!.disconnect();
     if (targetDevice == null) return;
-
     setState(() {
-      connectionText = "Device Connecting";
+      connectionText = "Device Connecting ${targetDevice!.name}";
+      isLoading = true;
     });
-
-    await targetDevice.connect();
+    await targetDevice!.connect();
     print('DEVICE CONNECTED');
     setState(() {
-      connectionText = "Device Connected";
+      isLoading = false;
+      connectionText = "Device Connected ${targetDevice!.name}";
     });
-
     discoverServices();
   }
 
   disconnectFromDevice() {
     if (targetDevice == null) return;
-
-    targetDevice.disconnect();
-
+    targetDevice!.disconnect();
     setState(() {
+      isLoading = true;
       connectionText = "Device Disconnected";
     });
+  connectToDevice();
   }
 
   discoverServices() async {
+    setState(() {
+         isLoading = true;
+    });
     if (targetDevice == null) return;
 
-    List<BluetoothService> services = await targetDevice.discoverServices();
+    List<BluetoothService> services = await targetDevice!.discoverServices();
     services.forEach((service) {
       // do something with service
       if (service.uuid.toString() == Constants.SERVICE_UUID) {
@@ -93,7 +112,8 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
             targetCharacteristic = characteristic;
             writeData("Hi there, ESP32!!");
             setState(() {
-              connectionText = "All Ready with ${targetDevice.name}";
+                 isLoading = false;
+              connectionText = "All Ready with ${targetDevice!.name}";
             });
           }
         });
@@ -106,7 +126,7 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
 
     List<int> bytes = utf8.encode(data);
     try {
-      await targetCharacteristic.write(bytes);
+      await targetCharacteristic!.write(bytes);
     } catch (e) {
       writeData(data);
     }
@@ -118,14 +138,28 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
       String data =
           "${degrees.toStringAsFixed(2)} ${distance.toStringAsFixed(2)}";
       print(data);
-      writeData(data);
+      if (targetDevice != null && targetCharacteristic != null) {
+        writeData(data);
+      }
     }
-
     return Scaffold(
-      body: JoystickView(
-        onDirectionChanged: onDirectionChanged,
-        interval: const Duration(milliseconds: 200),
-      ),
+      floatingActionButton: FloatingActionButton(onPressed: () {
+        connectToDevice();
+      },),
+      body: isLoading
+          ?  Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                const  CircularProgressIndicator(),
+                  Text(connectionText)
+                ],
+              ),
+            )
+          : JoystickView(
+              onDirectionChanged: onDirectionChanged,
+              interval: const Duration(milliseconds: 200),
+            ),
     );
   }
 }
