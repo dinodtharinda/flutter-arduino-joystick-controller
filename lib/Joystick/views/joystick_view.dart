@@ -1,6 +1,5 @@
 //ignore_for_file: prefer_const_constructors, no_leading_underscores_for_local_identifiers
 //ignore: no_leading_underscores_for_library_prefixes
-import 'dart:async';
 import 'dart:math' as _math;
 
 import 'package:flutter/material.dart';
