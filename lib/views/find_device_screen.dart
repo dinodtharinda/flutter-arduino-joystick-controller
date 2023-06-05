@@ -1,13 +1,9 @@
-// ignore_for_file: unnecessary_null_comparison, avoid_function_literals_in_foreach_calls, avoid_print
-
-import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
-import 'package:joy/Joystick/views/joystick_view.dart';
 
-import '../constants/constant.dart';
+import 'package:joy/services/bluetooth_service.dart';
+import 'package:joy/views/remote_screen.dart';
+import 'package:provider/provider.dart';
 
 class FindDevicesScreen extends StatefulWidget {
   const FindDevicesScreen({super.key});
@@ -17,149 +13,14 @@ class FindDevicesScreen extends StatefulWidget {
 }
 
 class _FindDevicesScreenState extends State<FindDevicesScreen> {
-  FlutterBlue flutterBlue = FlutterBlue.instance;
-  StreamSubscription<ScanResult>? scanSubScription;
-
-  BluetoothDevice? targetDevice;
-  BluetoothCharacteristic? targetCharacteristic;
-
-  String connectionText = "";
-
-  bool isLoading = false;
-  @override
-  void dispose() {
-    flutterBlue.stopScan();
-    super.dispose();
-  }
   @override
   void initState() {
     super.initState();
-    startScan();
-  }
-  
-
-  startScan() {
-    stopScan() ;
-    flutterBlue.stopScan();
-    setState(() {
-      isLoading = true;
-      connectionText = "Start Scanning";
-    });
-  
-    // print(flutterBlue.connectedDevices);
-    
-    scanSubScription = flutterBlue.scan().listen((scanResult) {
-      if (scanResult.device.name == Constants.TARGET_DEVICE_NAME) {
-        print('DEVICE found');
-        stopScan();
-        setState(() {
-          isLoading = false;
-          connectionText = "Found Target Device";
-        });
-
-        targetDevice = scanResult.device;
-        connectToDevice();
-      }
-    },
-     onDone: () => stopScan());
-  }
-
-
-
-  stopScan() {
-    scanSubScription?.cancel();
-    scanSubScription = null;
-  }
-
-  connectToDevice() async {
-    await targetDevice!.disconnect();
-    if (targetDevice == null) return;
-    setState(() {
-      connectionText = "Device Connecting ${targetDevice!.name}";
-      isLoading = true;
-    });
-    await targetDevice!.connect();
-    print('DEVICE CONNECTED');
-    setState(() {
-      isLoading = false;
-      connectionText = "Device Connected ${targetDevice!.name}";
-    });
-    discoverServices();
-  }
-
-  disconnectFromDevice() {
-    if (targetDevice == null) return;
-    targetDevice!.disconnect();
-    setState(() {
-      isLoading = true;
-      connectionText = "Device Disconnected";
-    });
-  connectToDevice();
-  }
-
-  discoverServices() async {
-    setState(() {
-         isLoading = true;
-    });
-    if (targetDevice == null) return;
-
-    List<BluetoothService> services = await targetDevice!.discoverServices();
-    services.forEach((service) {
-      // do something with service
-      if (service.uuid.toString() == Constants.SERVICE_UUID) {
-        service.characteristics.forEach((characteristic) {
-          if (characteristic.uuid.toString() == Constants.CHARACTERISTIC_UUID) {
-            targetCharacteristic = characteristic;
-            writeData("Hi there, ESP32!!");
-            setState(() {
-                 isLoading = false;
-              connectionText = "All Ready with ${targetDevice!.name}";
-            });
-          }
-        });
-      }
-    });
-  }
-
-  writeData(String data) async {
-    if (targetCharacteristic == null) return;
-
-    List<int> bytes = utf8.encode(data);
-    try {
-      await targetCharacteristic!.write(bytes);
-    } catch (e) {
-      writeData(data);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    Future onDirectionChanged(double degrees, double distance) async {
-      String data =
-          "${degrees.toStringAsFixed(2)} ${distance.toStringAsFixed(2)}";
-      print(data);
-      if (targetDevice != null && targetCharacteristic != null) {
-        writeData(data);
-      }
-    }
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(onPressed: () {
-        connectToDevice();
-      },),
-      body: isLoading
-          ?  Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                const  CircularProgressIndicator(),
-                  Text(connectionText)
-                ],
-              ),
-            )
-          : JoystickView(
-              onDirectionChanged: onDirectionChanged,
-              interval: const Duration(milliseconds: 200),
-            ),
-    );
+    BTService btService = Provider.of<BTService>(context, listen: false);
+    return RemoteScreen(btService: btService);
   }
 }

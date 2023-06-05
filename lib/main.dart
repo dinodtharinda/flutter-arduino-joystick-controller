@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:joy/services/bluetooth_service.dart';
 
 import 'package:joy/views/splash_screen.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,8 +13,13 @@ void main() {
       [DeviceOrientation.landscapeRight, DeviceOrientation.landscapeLeft]).then(
     (_) {
       runApp(
-        const MaterialApp(
-          home: SplashScreen(),
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (context) => BTService(),)
+          ],
+          child: const MaterialApp(
+            home: SplashScreen(),
+          ),
         ),
       );
     },
