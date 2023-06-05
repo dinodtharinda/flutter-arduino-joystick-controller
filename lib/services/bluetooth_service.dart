@@ -26,29 +26,39 @@ class BTService with ChangeNotifier {
 
   void changeText(String text) {
     _connectionText = text;
-notifyListeners();
   }
 
   void setIsLoading(bool state) {
     _isLoading = state;
-    notifyListeners();
+  }
 
+  refresh() {
+    _connectionText = "Refreshing";
+    stopScan();
+    disconnectFromDevice();
+    startScan();
   }
 
   startScan() {
     setIsLoading(true);
-    changeText("Start Scanning");
+    changeText("Start Scanning".toUpperCase());
     stopScan();
-    scanSubScription = flutterBlue.scan().listen((scanResult) {
-      if (scanResult.device.name == Constants.TARGET_DEVICE_NAME) {
-        print('DEVICE found');
-        stopScan();
-        changeText("Found Target Device");
-        targetDevice = scanResult.device;
-        connectToDevice();
-      }
-      setIsLoading(false);
-    }, onDone: () =>stopScan());
+    flutterBlue.stopScan();
+
+    try {
+      scanSubScription = flutterBlue.scan().listen((scanResult) {
+        if (scanResult.device.name == Constants.TARGET_DEVICE_NAME) {
+          print('DEVICE found'.toUpperCase());
+          stopScan();
+          print("Found Target Device".toUpperCase());
+          targetDevice = scanResult.device;
+          connectToDevice();
+          notifyListeners();
+        }
+      }, onDone: () => stopScan());
+    } catch (e) {
+      stopScan();
+    }
   }
 
   stopScan() {
@@ -56,31 +66,27 @@ notifyListeners();
       scanSubScription!.cancel();
       scanSubScription = null;
     }
-    changeText("Scan Stoped!");
-     connectToDevice();
+    print("Scan Stoped!".toUpperCase());
   }
 
   connectToDevice() async {
-    setIsLoading(true);
-    changeText("Device Connecting");
+    print("Device Connecting".toUpperCase());
     await targetDevice!.disconnect();
     if (targetDevice == null) return;
     await targetDevice!.connect();
-    print('DEVICE CONNECTED');
-    changeText("Device Connected");
+    print('DEVICE CONNECTED'.toUpperCase());
     discoverServices();
-    setIsLoading(false);
+    notifyListeners();
   }
 
   disconnectFromDevice() {
     if (targetDevice == null) return;
     targetDevice!.disconnect();
-    changeText("Device Disconnected");
-    connectToDevice();
+    print("Device Disconnected".toUpperCase());
+    notifyListeners();
   }
 
   discoverServices() async {
-    setIsLoading(true);
     if (targetDevice == null) return;
     List<BluetoothService> services = await targetDevice!.discoverServices();
     services.forEach((service) {
@@ -89,13 +95,17 @@ notifyListeners();
         service.characteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == Constants.CHARACTERISTIC_UUID) {
             targetCharacteristic = characteristic;
-            // writeData("Hi there, ESP32!!");
-            _connectionText = "All Ready with ${targetDevice!.name}";
+            writeData("Hi there, ESP32!!");
+            writeData("0, 0");
+
+            _connectionText =
+                "All Ready with ${targetDevice!.name}".toUpperCase();
+            setIsLoading(false);
+            notifyListeners();
           }
         });
       }
     });
-    setIsLoading(false);
   }
 
   writeData(String data) async {
@@ -104,7 +114,12 @@ notifyListeners();
     try {
       await targetCharacteristic!.write(bytes);
     } catch (e) {
-      writeData(data);
+      if (data == "0.00 0.00") {
+        writeData(data);
+        print("---------------------------------------");
+      } else {
+        print("+++++++++++++++++++++++++++++++++++++");
+      }
     }
   }
 }

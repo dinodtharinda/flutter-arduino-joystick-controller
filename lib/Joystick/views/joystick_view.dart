@@ -110,11 +110,12 @@ class JoystickView extends StatelessWidget {
           ],
         );
         return GestureDetector(
-          onPanCancel: ()async {
-           await Future.delayed(Duration(seconds: 1)).then((value) {
+          onPanCancel: () async {
+            await Future.delayed(Duration(seconds: 1)).then((value) {
               onDirectionChanged!(0, 0);
             });
             onDirectionChanged!(0, 0);
+            
           },
           onPanStart: (details) {
             _callbackTimestamp = _processGesture(actualSize, actualSize / 2,

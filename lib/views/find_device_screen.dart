@@ -21,6 +21,7 @@ class _FindDevicesScreenState extends State<FindDevicesScreen> {
   @override
   Widget build(BuildContext context) {
     BTService btService = Provider.of<BTService>(context, listen: false);
+    btService.startScan();
     return RemoteScreen(btService: btService);
   }
 }

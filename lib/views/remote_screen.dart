@@ -19,7 +19,7 @@ class RemoteScreen extends StatefulWidget {
 class _RemoteScreenState extends State<RemoteScreen> {
   @override
   void initState() {
-    widget.btService.startScan();
+    setState(() {});
     super.initState();
   }
 
@@ -57,17 +57,25 @@ class _RemoteScreenState extends State<RemoteScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       JoystickView(
-                          interval: const Duration(milliseconds: 200),
-                          opacity: 0.4,
+                          interval: const Duration(milliseconds: 100),
+                          opacity: 0.9,
                           onDirectionChanged: onDirectionChanged),
+                      ElevatedButton(
+                          onPressed: () =>
+                              widget.btService.writeData("incrementCounter"),
+                          child: const Text("Increment"))
+                          ,ElevatedButton(
+                          onPressed: () =>
+                              widget.btService.writeData("Hello"),
+                          child: const Text("Hello"))
                     ],
                   ),
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(onPressed: () {
-        widget.btService.writeData('incrementCounter');
-      }),
+      floatingActionButton: FloatingActionButton(
+          onPressed: () => widget.btService.refresh(),
+          child: const Icon(Icons.refresh)),
     );
   }
 }
